@@ -47,20 +47,39 @@ function getRealIp() {
     return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 }
 
+// Récupérer le pays via ip-api.com (gratuit, sans clé)
+function getCountry($ip) {
+    if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+        return 'Local';
+    }
+    $ctx = stream_context_create(['http' => ['timeout' => 1]]);
+    $response = @file_get_contents("http://ip-api.com/json/{$ip}?fields=countryCode", false, $ctx);
+    if ($response) {
+        $data = json_decode($response, true);
+        if (isset($data['countryCode'])) {
+            return $data['countryCode'];
+        }
+    }
+    return '??';
+}
+
 // Logger la redirection
 function logRedirection($url, $log_file) {
     $timestamp = date('Y-m-d H:i:s');
-    $ip = anonymizeIp(getRealIp());
+    $real_ip = getRealIp();
+    $country = getCountry($real_ip);
+    $ip = anonymizeIp($real_ip);
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
 
     // Limiter la taille du User-Agent pour éviter les abus
     $user_agent = substr($user_agent, 0, 200);
 
-    // Format: timestamp | IP | URL | User-Agent
+    // Format: timestamp | IP | Country | URL | User-Agent
     $log_entry = sprintf(
-        "%s | %s | %s | %s\n",
+        "%s | %s | %s | %s | %s\n",
         $timestamp,
         $ip,
+        $country,
         $url,
         $user_agent
     );

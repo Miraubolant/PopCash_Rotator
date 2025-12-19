@@ -14,22 +14,30 @@ if (empty($provided_token) || !hash_equals($stats_token, $provided_token)) {
     die('Accès refusé');
 }
 
+// Convertir code pays en emoji drapeau
+function countryFlag($code) {
+    if (strlen($code) !== 2 || $code === '??') return $code;
+    $code = strtoupper($code);
+    return mb_chr(127397 + ord($code[0])) . mb_chr(127397 + ord($code[1]));
+}
+
 // Récupérer les logs des dernières 24h
 function getStats24h($log_file, $urls) {
     $stats = [];
     $total = 0;
     $ip_stats = [];
+    $country_stats = [];
 
     foreach ($urls as $url) {
         $stats[$url] = 0;
     }
 
     if (!file_exists($log_file)) {
-        return ['stats' => $stats, 'total' => 0, 'ip_stats' => []];
+        return ['stats' => $stats, 'total' => 0, 'ip_stats' => [], 'country_stats' => []];
     }
 
     $now = time();
-    $h24_ago = $now - (24 * 60 * 60);
+    $h24_ago = $now - 24 * 60 * 60;
 
     $handle = fopen($log_file, 'r');
     if ($handle) {
@@ -37,12 +45,21 @@ function getStats24h($log_file, $urls) {
             $line = trim($line);
             if (empty($line)) continue;
 
-            $parts = explode(' | ', $line, 4);
-            if (count($parts) < 3) continue;
+            $parts = explode(' | ', $line, 5);
+            if (count($parts) < 4) continue;
 
             $timestamp = strtotime($parts[0]);
             $ip = $parts[1];
-            $url = $parts[2];
+
+            // Nouveau format: timestamp | IP | Country | URL | UA
+            // Ancien format: timestamp | IP | URL | UA
+            if (count($parts) >= 5) {
+                $country = $parts[2];
+                $url = $parts[3];
+            } else {
+                $country = '??';
+                $url = $parts[2];
+            }
 
             if ($timestamp >= $h24_ago) {
                 if (isset($stats[$url])) {
@@ -50,10 +67,17 @@ function getStats24h($log_file, $urls) {
                 }
                 $total++;
 
+                // Stats par pays
+                if (!isset($country_stats[$country])) {
+                    $country_stats[$country] = 0;
+                }
+                $country_stats[$country]++;
+
                 // Regrouper par IP
                 if (!isset($ip_stats[$ip])) {
                     $ip_stats[$ip] = [
                         'count' => 0,
+                        'country' => $country,
                         'first_seen' => $parts[0],
                         'last_seen' => $parts[0]
                     ];
@@ -65,14 +89,15 @@ function getStats24h($log_file, $urls) {
         fclose($handle);
     }
 
-    // Trier par nombre de visites décroissant
     uasort($ip_stats, fn($a, $b) => $b['count'] - $a['count']);
+    arsort($country_stats);
 
     return [
         'stats' => $stats,
         'total' => $total,
         'ip_stats' => array_slice($ip_stats, 0, 20, true),
-        'unique_ips' => count($ip_stats)
+        'unique_ips' => count($ip_stats),
+        'country_stats' => $country_stats
     ];
 }
 
@@ -126,6 +151,21 @@ $data = getStats24h($log_file, $urls);
         }
         .card-body { padding: 0; }
 
+        .countries {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 16px;
+        }
+        .country-tag {
+            background: #21262d;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        .country-tag .flag { margin-right: 4px; }
+        .country-tag .cnt { color: #58a6ff; font-weight: 500; }
+
         table { width: 100%; border-collapse: collapse; }
         th, td {
             padding: 8px 16px;
@@ -157,6 +197,7 @@ $data = getStats24h($log_file, $urls);
         }
         .ip { font-family: ui-monospace, monospace; font-size: 12px; color: #8b949e; }
         .time { color: #8b949e; font-size: 12px; }
+        .flag { font-size: 16px; }
 
         .footer {
             text-align: center;
@@ -182,10 +223,25 @@ $data = getStats24h($log_file, $urls);
                 <div class="stat-label">IPs uniques</div>
             </div>
             <div class="stat-box">
-                <div class="stat-value"><?= count($urls) ?></div>
-                <div class="stat-label">URLs actives</div>
+                <div class="stat-value"><?= count($data['country_stats']) ?></div>
+                <div class="stat-label">Pays</div>
             </div>
         </div>
+
+        <?php if (!empty($data['country_stats'])): ?>
+        <div class="card">
+            <div class="card-header">Pays</div>
+            <div class="countries">
+                <?php foreach ($data['country_stats'] as $country => $cnt): ?>
+                <span class="country-tag">
+                    <span class="flag"><?= countryFlag($country) ?></span>
+                    <?= htmlspecialchars($country) ?>
+                    <span class="cnt"><?= $cnt ?></span>
+                </span>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <div class="card">
             <div class="card-header">Répartition par URL</div>
@@ -225,18 +281,18 @@ $data = getStats24h($log_file, $urls);
                 <table>
                     <thead>
                         <tr>
+                            <th>Pays</th>
                             <th>IP</th>
                             <th>Visites</th>
-                            <th>Première visite</th>
                             <th>Dernière visite</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($data['ip_stats'] as $ip => $info): ?>
                         <tr>
+                            <td class="flag"><?= countryFlag($info['country']) ?></td>
                             <td class="ip"><?= htmlspecialchars($ip) ?></td>
                             <td class="count"><?= $info['count'] ?></td>
-                            <td class="time"><?= htmlspecialchars($info['first_seen']) ?></td>
                             <td class="time"><?= htmlspecialchars($info['last_seen']) ?></td>
                         </tr>
                         <?php endforeach; ?>
