@@ -1,0 +1,25 @@
+# Fichiers de logs
+logs/*.log
+logs/*.txt
+!logs/.htaccess
+!logs/.gitkeep
+
+# Fichiers d'environnement
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PHP
+vendor/
+composer.lock
