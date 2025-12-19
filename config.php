@@ -19,7 +19,7 @@ $urls = [
  * Token de sécurité pour accéder aux statistiques
  * Changez cette valeur par un token sécurisé !
  */
-$stats_token = 'votre_token_secret_ici';
+$stats_token = 'Xk9mP2vL8nQwR4tY';
 
 /**
  * Chemin vers le fichier de logs
