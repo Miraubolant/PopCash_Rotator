@@ -1,10 +1,14 @@
 <?php
 /**
  * Configuration du rotateur d'URLs PopCash
- * Modifiez ce tableau pour ajouter/supprimer des URLs
+ *
+ * Les URLs peuvent être définies via la variable d'environnement ROTATOR_URLS
+ * Format: URLs séparées par des virgules
+ * Exemple: ROTATOR_URLS="https://url1.com,https://url2.com"
  */
 
-$urls = [
+// URLs par défaut (utilisées si pas de variable d'environnement)
+$default_urls = [
     'https://t.co/DULTtPxmwG',
     'https://www.reddit.com/user/AideLive2917/comments/1pqj4a2/httpsvintdresscom/',
     'https://www.reddit.com/user/AideLive2917/comments/1pqj5nd/httpsvintdresscom/',
@@ -12,11 +16,19 @@ $urls = [
     'https://l.facebook.com/l.php?u=https%3A%2F%2Fvintdress.com%2F%3Ffbclid%3DIwZXh0bgNhZW0CMTAAYnJpZBEwWWRPNjJxNFJRaDVqR2xCdnNydGMGYXBwX2lkEDIyMjAzOTE3ODgyMDA4OTIAAR7NB5UQGJwGKT6wPElNFXwK06dWSI4YOaDxRyDmYVjU4NbnJNttXZVnIzDQgQ_aem_Usf0mlq4p5ld5l9FqB_AzQ&h=AT00DC2oY1Hm-YjtbACENeimJJlx4xAlQp6MUHUlEz7kc48IJbfw_r89zOoW-x_Jm1XcjwqWRws-2wrVK3zCf0RE-kc0nHOuTdzP5K8nVnbo9r4UG6ozXUo92Hx5R5fBYsBY65QIXH7yV8CnSQ&__tn__=-UK-R&c[0]=AT1_fDKy_5fD8nHCbN9NtZHZUzpGE_VghjxOYsee592a7pHYAkPZ-t-3fJ4ZszQIXp6mKvI79iAS-5BiTVI1ymNqNEHFFm-nANNKrgR-20Vu5lCrmo9jp5I1Sm2jswlbZg',
 ];
 
+// Charger les URLs depuis la variable d'environnement si définie
+$env_urls = getenv('ROTATOR_URLS');
+if ($env_urls) {
+    $urls = array_filter(array_map('trim', explode(',', $env_urls)));
+} else {
+    $urls = $default_urls;
+}
+
 /**
  * Token de sécurité pour accéder aux statistiques
- * Changez cette valeur par un token sécurisé !
+ * Peut aussi être défini via ROTATOR_TOKEN
  */
-$stats_token = 'Xk9mP2vL8nQwR4tY';
+$stats_token = getenv('ROTATOR_TOKEN') ?: 'Xk9mP2vL8nQwR4tY';
 
 /**
  * Chemin vers le fichier de logs
