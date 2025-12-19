@@ -5,9 +5,14 @@
  */
 
 $urls = [
-    'https://vintdress.fr/landing1',
-    'https://vintdress.fr/landing2',
-    'https://funevent.fr/promo',
+    'https://t.co/s7OoPoztNJ',
+    'https://t.co/CqHh6TJTfH',
+    'https://t.co/vW6boGrOv3',
+    'https://t.co/97yxFSyc4T',
+    'https://t.co/0EyCWmbzas',
+    'https://t.co/NGbGmgm27W',
+    'https://t.co/YEP3RcEfiC',
+    'https://t.co/Wqsdiad6VU',
 ];
 
 /**
